@@ -26,7 +26,7 @@ public class MainActivity extends ActionBarActivity {
         setContentView(R.layout.activity_main);
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.container, new PlaceholderFragment())
+                    .add(R.id.container, new ForecastFragment())
                     .commit();
         }
     }
@@ -57,30 +57,5 @@ public class MainActivity extends ActionBarActivity {
     /**
      * A placeholder fragment containing a simple view.
      */
-    public static class PlaceholderFragment extends Fragment {
 
-        public PlaceholderFragment() {
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            String [] itemsArray = {
-                    "Today - Sunny - 88/63",
-                    "Tomorrow - Foggy - 75/44",
-                    "Wednesday - Rainy - 77/39",
-                    "Thursday - Asteroids - 75/65",
-                    "Friday - Heavy Rain - 78/49",
-                    "Saturday - Hot - 77/35",
-                    "Sunday - Sunny - 73/45"
-            };
-            List<String> items = new ArrayList<String>(Arrays.asList(itemsArray));
-            ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(),
-                    R.layout.list_item_forecast,R.id.list_item_forecast_textview,items);
-            ListView listView = (ListView) rootView.findViewById(R.id.listview_forecast);
-            listView.setAdapter(adapter);
-            return rootView;
-        }
-    }
 }
