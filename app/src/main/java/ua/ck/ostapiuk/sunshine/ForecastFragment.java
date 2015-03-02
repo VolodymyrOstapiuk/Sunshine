@@ -1,8 +1,11 @@
 package ua.ck.ostapiuk.sunshine;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
 import android.util.Log;
@@ -12,8 +15,10 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,6 +35,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import ua.ck.ostapiuk.sunshine.R;
 
@@ -63,6 +69,14 @@ public class ForecastFragment extends Fragment {
                 R.layout.list_item_forecast, R.id.list_item_forecast_textview, items);
         ListView listView = (ListView) rootView.findViewById(R.id.listview_forecast);
         listView.setAdapter(adapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Intent intent = new Intent(getActivity(),DetailActivity.class);
+                intent.putExtra("Forecast",adapter.getItem(position));
+                startActivity(intent);
+            }
+        });
         return rootView;
     }
     public class FetchWeatherTask extends AsyncTask<String,Void,String[]>{
@@ -145,6 +159,12 @@ public class ForecastFragment extends Fragment {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        updateWeather();
+    }
+
+    @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
        inflater.inflate(R.menu.forecastfragment, menu);
     }
@@ -153,8 +173,7 @@ public class ForecastFragment extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_refresh){
-            FetchWeatherTask weatherTask = new FetchWeatherTask();
-            weatherTask.execute("18000");
+            updateWeather();
         }
         return super.onOptionsItemSelected(item);
     }
@@ -163,7 +182,13 @@ public class ForecastFragment extends Fragment {
             SimpleDateFormat shortenedDateFormat = new SimpleDateFormat("EEE MMM dd");
             return shortenedDateFormat.format(time);
         }
-        private String formatHighLows(double high, double low){
+        private String formatHighLows(double high, double low,String unitType){
+            if (unitType.equals(getString(R.string.pref_units_imperial))) {
+                high = (high * 1.8) + 32;
+                low = (low * 1.8) + 32;
+            } else if (!unitType.equals(getString(R.string.pref_units_metric))) {
+                Log.d(TAG, "Unit type not found: " + unitType);
+            }
             long roundedHigh = Math.round(high);
             long roundedLow = Math.round(low);
 
@@ -183,6 +208,11 @@ public class ForecastFragment extends Fragment {
             int julianStartDay = Time.getJulianDay(System.currentTimeMillis(), dayTime.gmtoff);
             dayTime = new Time();
             String[] resultStrs = new String[numDays];
+            SharedPreferences sharedPrefs =
+                PreferenceManager.getDefaultSharedPreferences(getActivity());
+            String unitType = sharedPrefs.getString(
+                getString(R.string.pref_units_key),
+                getString(R.string.pref_units_metric));
             for(int i = 0; i < weatherArray.length(); i++) {
                 String day;
                 String description;
@@ -196,12 +226,19 @@ public class ForecastFragment extends Fragment {
                 JSONObject temperatureObject = dayForecast.optJSONObject(OWM_TEMPERATURE);
                 double high = temperatureObject.optDouble(OWM_MAX);
                 double low = temperatureObject.optDouble(OWM_MIN);
-                highAndLow = formatHighLows(high, low);
+                highAndLow = formatHighLows(high, low,unitType);
                 resultStrs[i] = day + " - " + description + " - " + highAndLow;
 
 
             }
             return resultStrs;
         }
+    private void updateWeather(){
+        FetchWeatherTask weatherTask = new FetchWeatherTask();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location = preferences.getString(getString(R.string.pref_location_key),
+            getString(R.string.pref_location_default));
+        weatherTask.execute(location);
+    }
     }
 
